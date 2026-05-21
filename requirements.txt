@@ -5,3 +5,5 @@ fpdf2
 plotly
 pandas
 duckduckgo-search
+beautifulsoup4
+lxml
