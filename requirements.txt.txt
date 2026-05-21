@@ -1,0 +1,7 @@
+streamlit
+requests
+pillow
+fpdf2
+plotly
+pandas
+duckduckgo-search
