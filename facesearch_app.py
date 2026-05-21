@@ -138,7 +138,7 @@ def is_bookmarked(url: str) -> bool:
     return any(b['url'] == url for b in st.session_state.bookmarks)
 
 # ----------------------------------------------------------------------
-# Plattform-API-Funktionen (statisch, geben Optional[SearchResult] zurück)
+# Plattform-API-Funktionen
 # ----------------------------------------------------------------------
 def search_twitter_x(username: str) -> Optional[SearchResult]:
     if not HAS_TWITTER:
@@ -197,7 +197,6 @@ def search_reddit_user(username: str) -> Optional[SearchResult]:
     if not HAS_REDDIT:
         return None
     try:
-        # Zuerst OAuth2-Token holen (vereinfacht)
         auth = requests.auth.HTTPBasicAuth(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET)
         data = {"grant_type": "client_credentials"}
         headers = {"User-Agent": "FaceSearch/1.0"}
@@ -211,7 +210,6 @@ def search_reddit_user(username: str) -> Optional[SearchResult]:
         if not access_token:
             return None
 
-        # Profil abrufen
         url = f"https://oauth.reddit.com/user/{username}/about"
         headers["Authorization"] = f"Bearer {access_token}"
         resp = requests.get(url, headers=headers, timeout=10)
@@ -253,7 +251,7 @@ def search_tiktok_user(username: str) -> Optional[SearchResult]:
     return None
 
 # ----------------------------------------------------------------------
-# Suchmaschine mit allen Plattformen
+# Suchmaschine
 # ----------------------------------------------------------------------
 class UltimateSearcher:
     def __init__(self):
@@ -275,20 +273,16 @@ class UltimateSearcher:
             return self.cache[key][1]
 
         threads = []
-        # Bildersuche
         if "google" in query.engines and query.image_path:
             threads.append(threading.Thread(target=self._google, args=(query,)))
         if "bing" in query.engines and query.image_path:
             threads.append(threading.Thread(target=self._bing, args=(query,)))
         if "duckduckgo" in query.engines:
             threads.append(threading.Thread(target=self._duckduckgo, args=(query,)))
-        # Social Media (alle Plattformen)
         if "social" in query.engines and query.person_name:
             threads.append(threading.Thread(target=self._social_media_all, args=(query,)))
-        # Video-Plattformen
         if "video" in query.engines and query.person_name:
             threads.append(threading.Thread(target=self._video_platforms, args=(query,)))
-        # News
         if "news" in query.engines and query.person_name:
             threads.append(threading.Thread(target=self._news, args=(query,)))
 
@@ -353,7 +347,6 @@ class UltimateSearcher:
         name = q.person_name
         username = name.lower().replace(" ", "")
 
-        # Offizielle APIs (falls Keys vorhanden)
         if HAS_TWITTER:
             result = search_twitter_x(username)
             if result: self._add(result)
@@ -367,7 +360,6 @@ class UltimateSearcher:
             result = search_tiktok_user(username)
             if result: self._add(result)
 
-        # URL-basierte Profil-Links (für alle Plattformen)
         platforms = {
             "Instagram": f"https://www.instagram.com/{username}/",
             "Twitter/X": f"https://twitter.com/{username}",
@@ -419,7 +411,7 @@ class UltimateSearcher:
             pass
 
 # ----------------------------------------------------------------------
-# Benutzeroberfläche
+# UI
 # ----------------------------------------------------------------------
 def legal_notice():
     if not st.session_state.legal_accepted:
@@ -513,7 +505,6 @@ def main():
                     st.warning("Keine Treffer.")
                 else:
                     st.success(f"{len(results)} Treffer")
-                    # Diagramm
                     src_counts = {}
                     for r in results:
                         src_counts[r.source] = src_counts.get(r.source, 0) + 1
@@ -553,7 +544,13 @@ def main():
                         pdf.set_font("Helvetica", size=8)
                         pdf.cell(0, 6, r.url, ln=True)
                         pdf.ln(2)
-                      st.download_button("PDF", pdf.output(), "ergebnisse.pdf", "application/pdf")
+
+                    # PDF-Export mit Fallback
+                    try:
+                        pdf_bytes = pdf.output()
+                    except (TypeError, AttributeError):
+                        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+                    st.download_button("PDF", pdf_bytes, "ergebnisse.pdf", "application/pdf")
 
 if __name__ == "__main__":
     main()
