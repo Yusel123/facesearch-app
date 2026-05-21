@@ -553,7 +553,7 @@ def main():
                         pdf.set_font("Helvetica", size=8)
                         pdf.cell(0, 6, r.url, ln=True)
                         pdf.ln(2)
-                    st.download_button("PDF", pdf.output(), "ergebnisse.pdf", "application/pdf")
+                      st.download_button("PDF", pdf.output(), "ergebnisse.pdf", "application/pdf")
 
 if __name__ == "__main__":
     main()
